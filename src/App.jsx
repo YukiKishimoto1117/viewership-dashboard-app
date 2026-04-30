@@ -829,7 +829,7 @@ const apiClient = {
       const nums=text.match(/\d+/g)||[];
       return nums.map(n=>parseInt(n)).filter(n=>!isNaN(n)&&n>=0&&n<subset.length).map(n=>subset[n]._origIdx);
     }
-    const{corner_ids}=await _callBackend("/api/search/semantic",{query,corner_ids:subset.map(c=>c.id),top_k:30});
+    const{corner_ids}=await _callBackend("/api/search/semantic", {query,top_k: 30,items: subset.map(c => ({id: c.id,text: cornerToText(c)}))});
     return corner_ids.map(id=>subset.find(c=>c.id===id)).filter(Boolean).map(c=>c._origIdx);
   },
 
