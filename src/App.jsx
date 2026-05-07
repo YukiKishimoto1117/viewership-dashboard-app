@@ -825,6 +825,7 @@ const apiClient = {
       query,
       top_k: 30,
     });
+    console.log("AI keywords:", keywords);
 
     const normalizedKeywords = keywords
       .map(k => String(k).toLowerCase())
