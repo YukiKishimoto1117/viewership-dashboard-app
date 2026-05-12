@@ -868,7 +868,7 @@ function computeCornerStats(corner,cache,metric){
 // };
 const API_CONFIG = {
   useMock: false,
-  baseUrl: "https://b6otkip8zb.execute-api.ap-northeast-1.amazonaws.com",
+  baseUrl: "https://fecc7uq4uapxx37bmockq3gyvi0ibsdf.lambda-url.ap-northeast-1.on.aws",
 };
 
 // コーナーのテキスト表現
@@ -1510,13 +1510,49 @@ function AnalysisPage({page,setPage,metric,setMetric,ratingsCache,
   const[streaming,setStreaming]=useState(false);
   const[topicLoading,setTopicLoading]=useState(false);
   const[error,setError]=useState(null);
+  const[cachedAt,setCachedAt]=useState(null);
 
   const dow=ds=>["日","月","火","水","木","金","土"][new Date(ds).getDay()];
   const activeDates=mode==="daily"?[selDate]:(WEEK_RANGES.find(w=>w.id===selWeek)?.dates||[]);
   const label=mode==="daily"?`${selDate}(${dow(selDate)}) ${slot==="morning"?"朝帯":"夕方帯"}`:`${WEEK_RANGES.find(w=>w.id===selWeek)?.label} ${slot==="morning"?"朝帯":"夕方帯"}`;
-  const runAnalysis=async()=>{
+  const cacheKey=`nbndash_analysis|${activeDates.join(",")}|${slot}`;
+
+  // 選択条件が変わったときキャッシュを自動ロード
+  useEffect(()=>{
+    try{
+      const raw=localStorage.getItem(cacheKey);
+      if(raw){
+        const{ov,hl,lb,savedAt}=JSON.parse(raw);
+        setOverviewText(ov||"");
+        setHighlightText(hl||"");
+        setAnalysisLabel(lb||label);
+        setCachedAt(savedAt||null);
+      }else{
+        setOverviewText("");
+        setHighlightText("");
+        setCachedAt(null);
+      }
+    }catch{
+      setOverviewText("");setHighlightText("");setCachedAt(null);
+    }
+  // eslint-disable-next-line
+  },[cacheKey]);
+
+  const runAnalysis=async(forceRefresh=false)=>{
+    // キャッシュがあり強制更新でなければスキップ
+    if(!forceRefresh){
+      try{
+        const raw=localStorage.getItem(cacheKey);
+        if(raw){
+          const{ov,hl,lb,savedAt}=JSON.parse(raw);
+          setOverviewText(ov||"");setHighlightText(hl||"");
+          setAnalysisLabel(lb||label);setCachedAt(savedAt||null);
+          return;
+        }
+      }catch{}
+    }
     setError(null);setLoading(true);setStreaming(true);
-    setOverviewText("");setHighlightText("");
+    setOverviewText("");setHighlightText("");setCachedAt(null);
     setAnalysisLabel(label);
     const ctx=buildAnalysisContext(activeDates,slot,ratingsCache);
     const slotLabel=slot==="morning"?"朝帯（6:00-8:00）":"夕方帯（16:40-19:00）";
@@ -1529,6 +1565,10 @@ function AnalysisPage({page,setPage,metric,setMetric,ratingsCache,
       // Section 2: ハイライト(会話継続)
       const t2=await apiClient.generateHighlight(p1,t1);
       setHighlightText(t2);
+      // キャッシュに保存
+      const savedAt=new Date().toLocaleString("ja-JP",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});
+      localStorage.setItem(cacheKey,JSON.stringify({ov:t1,hl:t2,lb:label,savedAt}));
+      setCachedAt(savedAt);
     }catch(e){
       setError("分析エラー: "+e.message);
     }finally{setLoading(false);setStreaming(false);}
@@ -1643,9 +1683,11 @@ function AnalysisPage({page,setPage,metric,setMetric,ratingsCache,
       <div style={{display:"flex",borderRadius:7,overflow:"hidden",border:"1px solid #E5E7EB"}}>
         {[{id:"morning",l:"朝 5:30–8:30"},{id:"evening",l:"夕方 16:00–19:30"}].map(s=><button key={s.id} onClick={()=>setSlot(s.id)} style={{padding:"4px 13px",border:"none",background:slot===s.id?"#FFF7ED":"#fff",color:slot===s.id?"#D94F00":"#9CA3AF",cursor:"pointer",fontSize:11,fontWeight:600}}>{s.l}</button>)}
       </div>
-      <button onClick={runAnalysis} disabled={loading} style={{padding:"5px 18px",borderRadius:7,border:"none",background:loading?"#F3F4F6":"linear-gradient(135deg,#D94F00,#DC2626)",color:loading?"#9CA3AF":"#fff",cursor:loading?"wait":"pointer",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
-        {loading?<><div style={{width:13,height:13,border:"2px solid #D1D5DB",borderTopColor:"#9CA3AF",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/> 分析中…</>:<>✨ 分析する</>}
+      <button onClick={()=>runAnalysis(false)} disabled={loading} style={{padding:"5px 18px",borderRadius:7,border:"none",background:loading?"#F3F4F6":"linear-gradient(135deg,#D94F00,#DC2626)",color:loading?"#9CA3AF":"#fff",cursor:loading?"wait":"pointer",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
+        {loading?<><div style={{width:13,height:13,border:"2px solid #D1D5DB",borderTopColor:"#9CA3AF",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/> 分析中…</>:<>✨ {cachedAt?"キャッシュ表示":"分析する"}</>}
       </button>
+      {cachedAt&&!loading&&<button onClick={()=>runAnalysis(true)} style={{padding:"5px 12px",borderRadius:7,border:"1px solid #E5E7EB",background:"#F9FAFB",color:"#6B7280",cursor:"pointer",fontSize:11,fontWeight:600}}>🔄 再分析</button>}
+      {cachedAt&&!loading&&<span style={{fontSize:10,color:"#9CA3AF"}}>保存済 {cachedAt}</span>}
       {error&&<span style={{fontSize:11,color:"#DC2626"}}>{error}</span>}
     </div>
 
