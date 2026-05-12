@@ -1969,7 +1969,7 @@ export default function App(){
         </select>
       </div>
       <div style={{display:"flex",borderRadius:7,overflow:"hidden",border:"1px solid #E5E7EB"}}>
-        {[{id:"morning",l:"朝 6:00–8:00"},{id:"evening",l:"夕方 16:40–19:00"}].map(s=><button key={s.id} onClick={()=>{setSlot(s.id);setSelMin(null);setHL(null);}} style={{padding:"4px 13px",border:"none",background:slot===s.id?"#FFF7ED":"#fff",color:slot===s.id?"#D94F00":"#9CA3AF",cursor:"pointer",fontSize:11,fontWeight:600}}>{s.l}</button>)}
+        {[{id:"morning",l:"朝 5:30–8:30"},{id:"evening",l:"夕方 16:00–19:30"}].map(s=><button key={s.id} onClick={()=>{setSlot(s.id);setSelMin(null);setHL(null);}} style={{padding:"4px 13px",border:"none",background:slot===s.id?"#FFF7ED":"#fff",color:slot===s.id?"#D94F00":"#9CA3AF",cursor:"pointer",fontSize:11,fontWeight:600}}>{s.l}</button>)}
       </div>
       <div style={{display:"flex",borderRadius:7,overflow:"hidden",border:"1px solid #E5E7EB"}}>
         {[{id:"chart",l:"📈 グラフ表示"},{id:"timetable",l:"📋 番組表"}].map(m=><button key={m.id} onClick={()=>{setDashMode(m.id);setSelMin(null);setHL(null);}} style={{padding:"4px 13px",border:"none",background:dashMode===m.id?"#F0FDF4":"#fff",color:dashMode===m.id?"#16A34A":"#9CA3AF",cursor:"pointer",fontSize:11,fontWeight:600}}>{m.l}</button>)}
